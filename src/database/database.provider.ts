@@ -9,7 +9,7 @@ import * as relations from './relations';
 export const DatabaseProvider: Provider = {
   provide: DRIZZLE,
   useFactory: () => {
-    const client = postgres(env.DATABASE_URL);
+    const client = postgres(env.POSTGRES_URL);
     return drizzle(client, {
       schema: {
         ...schema,
