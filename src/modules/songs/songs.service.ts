@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { DB } from '../../database/database.types';
 import { DRIZZLE } from '../../database/drizzle.constants';
 import { songs } from './songs.schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
 
@@ -10,8 +10,18 @@ import { UpdateSongDto } from './dto/update-song.dto';
 export class SongsService {
   constructor(@Inject(DRIZZLE) private db: DB) {}
 
-  async findAll() {
-    const songsList = await this.db.query.songs.findMany();
+  async findAll(title?: string, performer?: string) {
+    const songsList = await this.db.query.songs.findMany({
+      columns: {
+        id: true,
+        title: true,
+        performer: true,
+      },
+      where: and(
+        title ? ilike(songs.title, `%${title}%`) : undefined,
+        performer ? ilike(songs.performer, `%${performer}%`) : undefined,
+      ),
+    });
 
     return songsList;
   }

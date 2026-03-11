@@ -13,6 +13,9 @@ export class AlbumsService {
   async findOne(id: string) {
     const album = await this.db.query.albums.findFirst({
       where: eq(albums.id, id),
+      with: {
+        songs: true,
+      },
     });
 
     if (!album) throw new NotFoundException(`Album with id ${id} not found`);

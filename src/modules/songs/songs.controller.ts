@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { SongsService } from './songs.service';
 import { CreateSongDto } from './dto/create-song.dto';
@@ -18,15 +19,14 @@ export class SongsController {
   constructor(private readonly songsService: SongsService) {}
 
   @Get()
-  async findAll() {
-    const songs = await this.songsService.findAll();
+  async findAll(
+    @Query('title') title?: string,
+    @Query('performer') performer?: string,
+  ) {
+    const songs = await this.songsService.findAll(title, performer);
     return {
       data: {
-        songs: songs.map((song) => ({
-          id: song.id,
-          title: song.title,
-          performer: song.performer,
-        })),
+        songs,
       },
     };
   }
