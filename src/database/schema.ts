@@ -3,3 +3,4 @@ export * from '../modules/songs/songs.schema';
 export * from '../modules/users/users.schema';
 export * from '../modules/auth/auth.schema';
 export * from '../modules/playlists/playlists.schema';
+export * from '../modules/collaborations/collaborations.schema';

@@ -1,27 +1,42 @@
 import {
   ForbiddenException,
+  forwardRef,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { playlists, playlistSongs } from './playlists.schema';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import type { DB } from '../../database/database.types';
 import { DRIZZLE } from '../../database/drizzle.constants';
 import { AddSongToPlaylistDto } from './dto/add-song-to-playlist.dto';
 import { SongsService } from '../songs/songs.service';
+import { CollaborationsService } from '../collaborations/collaborations.service';
+import { collaborations } from '../collaborations/collaborations.schema';
 
 @Injectable()
 export class PlaylistsService {
   constructor(
     @Inject(DRIZZLE) private db: DB,
     private readonly songsService: SongsService,
+    @Inject(forwardRef(() => CollaborationsService))
+    private readonly collaborationsService: CollaborationsService,
   ) {}
 
   async findAll(userId: string) {
+    const collaborationPlaylist = await this.db.query.collaborations.findMany({
+      where: eq(collaborations.userId, userId),
+    });
+
     const playlistLists = await this.db.query.playlists.findMany({
-      where: eq(playlists.owner, userId),
+      where: or(
+        eq(playlists.owner, userId),
+        inArray(
+          playlists.id,
+          collaborationPlaylist.map((c) => c.playlistId),
+        ),
+      ),
       with: {
         owner: true,
       },
@@ -124,7 +139,12 @@ export class PlaylistsService {
     if (!playlist)
       throw new NotFoundException(`Playlist with id ${playlistId} not found`);
 
-    if (playlist.owner !== userId)
+    const isInCollaborations = await this.collaborationsService.findOne(
+      playlistId,
+      userId,
+    );
+
+    if (playlist.owner !== userId && !isInCollaborations)
       throw new ForbiddenException(`You are not the owner of this playlist`);
 
     const [addedSong] = await this.db
@@ -165,8 +185,13 @@ export class PlaylistsService {
     if (!playlist)
       throw new NotFoundException(`Playlist with id ${playlistId} not found`);
 
-    if (playlist.owner !== userId)
-      throw new ForbiddenException(`You are not the owner of this playlist`);
+    const isInCollaborations = await this.collaborationsService.findOne(
+      playlistId,
+      userId,
+    );
+
+    if (playlist.owner !== userId && !isInCollaborations)
+      throw new ForbiddenException(`You are not the owner of this playlist `);
 
     const [deletedSong] = await this.db
       .delete(playlistSongs)

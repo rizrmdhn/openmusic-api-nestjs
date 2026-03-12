@@ -7,6 +7,7 @@ import { SongsModule } from './modules/songs/songs.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PlaylistModule } from './modules/playlists/playlists.module';
+import { CollaborationsModule } from './modules/collaborations/collaborations.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PlaylistModule } from './modules/playlists/playlists.module';
     UsersModule,
     AuthModule,
     PlaylistModule,
+    CollaborationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

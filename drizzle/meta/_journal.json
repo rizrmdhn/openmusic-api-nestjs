@@ -57,6 +57,13 @@
       "when": 1773286114986,
       "tag": "0007_clean_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773287217327,
+      "tag": "0008_greedy_anthem",
+      "breakpoints": true
     }
   ]
 }

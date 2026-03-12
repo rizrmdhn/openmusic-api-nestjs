@@ -10,11 +10,15 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AccessTokenPayload } from '../auth/auth.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { AddSongToPlaylistDto } from './dto/add-song-to-playlist.dto';
+import { CollaborationsService } from '../collaborations/collaborations.service';
 
 @Controller('playlists')
 @UseGuards(JwtGuard)
 export class PlaylistsController {
-  constructor(private readonly playlistsService: PlaylistsService) {}
+  constructor(
+    private readonly playlistsService: PlaylistsService,
+    private readonly collaborationsService: CollaborationsService,
+  ) {}
 
   @Get()
   async findAll(@CurrentUser() user: AccessTokenPayload) {
@@ -75,8 +79,14 @@ export class PlaylistsController {
     if (!playlist)
       throw new NotFoundException(`Playlist with id ${id} not found`);
 
-    if (playlist.owner !== user.userId)
+    const isInCollaborations = await this.collaborationsService.findOne(
+      id,
+      user.userId,
+    );
+
+    if (playlist.owner !== user.userId && !isInCollaborations) {
       throw new ForbiddenException(`You are not the owner of this playlist`);
+    }
 
     return {
       data: {
