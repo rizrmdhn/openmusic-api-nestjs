@@ -8,10 +8,16 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PlaylistModule } from './modules/playlists/playlists.module';
 import { CollaborationsModule } from './modules/collaborations/collaborations.module';
+import { CacheModule } from './cache/cache.module';
+import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    CacheModule,
+    RabbitMQModule,
+    EmailModule,
     AlbumsModule,
     SongsModule,
     UsersModule,
