@@ -116,6 +116,23 @@ export class PlaylistsService {
       : null;
   }
 
+  async getSongs(playlistId: string, userId: string) {
+    const playlist = await this.findById(playlistId);
+
+    if (!playlist)
+      throw new NotFoundException(`Playlist with id ${playlistId} not found`);
+
+    const isInCollaborations = await this.collaborationsService.findOne(
+      playlistId,
+      userId,
+    );
+
+    if (playlist.owner !== userId && !isInCollaborations)
+      throw new ForbiddenException(`You are not the owner of this playlist`);
+
+    return playlist;
+  }
+
   async create(userId: string, dto: CreatePlaylistDto) {
     const [playlist] = await this.db
       .insert(playlists)
