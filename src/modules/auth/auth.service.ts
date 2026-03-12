@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { env } from '../../config/env';
-import { UsersService } from '../users/users.services';
+import { UsersService } from '../users/users.service';
 import { verify as argonVerify } from '@node-rs/argon2';
 import { jwtVerify, SignJWT } from 'jose';
 import { User } from '../users/users.schema';
