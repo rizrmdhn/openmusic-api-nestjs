@@ -1,0 +1,1 @@
+ALTER TABLE "playlist_songs" ADD COLUMN "id" varchar(255) PRIMARY KEY NOT NULL;
