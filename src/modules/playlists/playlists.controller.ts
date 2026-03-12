@@ -91,4 +91,18 @@ export class PlaylistsController {
       data: deletedSong,
     };
   }
+
+  @Get(':id/activities')
+  async getActivities(
+    @CurrentUser() user: AccessTokenPayload,
+    @Param('id') id: string,
+  ) {
+    const activities = await this.playlistsService.getPlaylistActivities(
+      id,
+      user.userId,
+    );
+    return {
+      data: activities,
+    };
+  }
 }

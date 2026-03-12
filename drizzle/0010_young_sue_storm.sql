@@ -1,0 +1,2 @@
+ALTER TABLE "playlist_song_activities" ALTER COLUMN "song_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "playlist_song_activities" ADD CONSTRAINT "playlist_song_activities_song_id_songs_id_fk" FOREIGN KEY ("song_id") REFERENCES "public"."songs"("id") ON DELETE cascade ON UPDATE no action;

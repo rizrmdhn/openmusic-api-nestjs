@@ -6,7 +6,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, eq, inArray, or } from 'drizzle-orm';
-import { playlists, playlistSongs } from './playlists.schema';
+import {
+  playlists,
+  playlistSongs,
+  playlistSongsActivities,
+} from './playlists.schema';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import type { DB } from '../../database/database.types';
 import { DRIZZLE } from '../../database/drizzle.constants';
@@ -133,6 +137,51 @@ export class PlaylistsService {
     return playlist;
   }
 
+  async getPlaylistActivities(playlistId: string, userId: string) {
+    const playlist = await this.findById(playlistId);
+
+    if (!playlist)
+      throw new NotFoundException(`Playlist with id ${playlistId} not found`);
+
+    const isInCollaborations = await this.collaborationsService.findOne(
+      playlistId,
+      userId,
+    );
+
+    if (playlist.owner !== userId && !isInCollaborations)
+      throw new ForbiddenException(`You are not the owner of this playlist`);
+
+    const activities = await this.db.query.playlistSongsActivities.findMany({
+      where: eq(playlistSongsActivities.playlistId, playlistId),
+      with: {
+        user: {
+          columns: {
+            id: true,
+            username: true,
+          },
+        },
+        song: {
+          columns: {
+            id: true,
+            title: true,
+            performer: true,
+          },
+        },
+      },
+    });
+
+    return {
+      playlistId,
+      activities: activities.map((activity) => ({
+        username: activity.user.username,
+        title: activity?.song?.title,
+        performer: activity?.song?.performer,
+        action: activity.action,
+        time: activity.time,
+      })),
+    };
+  }
+
   async create(userId: string, dto: CreatePlaylistDto) {
     const [playlist] = await this.db
       .insert(playlists)
@@ -172,7 +221,38 @@ export class PlaylistsService {
       })
       .returning();
 
+    await this.addActivity(playlistId, dto.songId, userId, 'add');
+
     return addedSong;
+  }
+
+  async addActivity(
+    playlistId: string,
+    songId: string,
+    userId: string,
+    action: 'add' | 'delete',
+  ) {
+    const playlist = await this.findById(playlistId);
+
+    if (!playlist)
+      throw new NotFoundException(`Playlist with id ${playlistId} not found`);
+
+    const isInCollaborations = await this.collaborationsService.findOne(
+      playlistId,
+      userId,
+    );
+
+    if (playlist.owner !== userId && !isInCollaborations)
+      throw new ForbiddenException(`You are not the owner of this playlist`);
+
+    const [activity] = await this.db.insert(playlistSongsActivities).values({
+      playlistId,
+      songId,
+      userId,
+      action,
+    });
+
+    return activity;
   }
 
   async delete(id: string, userId: string) {
@@ -219,6 +299,8 @@ export class PlaylistsService {
         ),
       )
       .returning();
+
+    await this.addActivity(playlist.id, songId, userId, 'delete');
 
     return deletedSong;
   }
