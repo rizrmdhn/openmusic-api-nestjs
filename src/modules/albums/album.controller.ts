@@ -6,12 +6,20 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseFilePipe,
   Post,
   Put,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AlbumsService } from './albums.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import {
+  ImageSizeValidator,
+  ImageTypeValidator,
+} from '../../storage/file.validators';
 
 @Controller('albums')
 export class AlbumsController {
@@ -37,6 +45,27 @@ export class AlbumsController {
         albumId: album.id,
         album,
       },
+    };
+  }
+
+  @Post(':id/covers')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('cover'))
+  async uploadCover(
+    @Param('id') id: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new ImageSizeValidator(5 * 1024 * 1024),
+          new ImageTypeValidator(),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    await this.albumsService.uploadCover(id, file);
+    return {
+      message: 'Cover uploaded successfully',
     };
   }
 

@@ -1,5 +1,9 @@
 import { integer, varchar } from 'drizzle-orm/pg-core';
-import { createTable, idGenerator } from '../../database/helpers';
+import {
+  createFileUrlColumn,
+  createTable,
+  idGenerator,
+} from '../../database/helpers';
 
 export const albums = createTable('albums', {
   id: varchar('id', { length: 255 })
@@ -7,4 +11,5 @@ export const albums = createTable('albums', {
     .$default(() => idGenerator('album')),
   name: varchar('name', { length: 255 }).notNull(),
   year: integer('year').notNull(),
+  ...createFileUrlColumn('cover'),
 });

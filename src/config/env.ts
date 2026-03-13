@@ -27,6 +27,20 @@ export const env = createEnv({
     SMTP_PASSWORD: z.string().optional(),
     // resend
     RESEND_API_KEY: z.string().optional(),
+    // storage
+    STORAGE_TYPE: z.enum(['filesystem', 'minio']).default('filesystem'),
+    UPLOADS_DIR: z.string().optional(),
+    BASE_URL: z.string().default('http://localhost:3000'),
+    MINIO_ENDPOINT: z.string().default('localhost'),
+    MINIO_PORT: z.coerce.number().default(9000),
+    MINIO_USE_SSL: z
+      .string()
+      .transform((v) => v === 'true')
+      .pipe(z.boolean())
+      .default(false),
+    MINIO_BUCKET: z.string().default('uploads'),
+    MINIO_ACCESS_KEY: z.string().optional(),
+    MINIO_SECRET_KEY: z.string().optional(),
   },
   runtimeEnv: process.env,
 });
