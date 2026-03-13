@@ -18,6 +18,10 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RabbitMQService.name);
   private model: amqplib.ChannelModel | null = null;
   private channel: amqplib.Channel | null = null;
+  private pendingConsumers: Array<{
+    queue: QueueName;
+    handler: (data: QueueJobDataMap[QueueName]) => Promise<void>;
+  }> = [];
 
   async onModuleInit() {
     await this.connect();
@@ -52,6 +56,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.logger.log('Connected to RabbitMQ');
+
+      for (const { queue, handler } of this.pendingConsumers) {
+        this.registerConsumer(queue, handler);
+      }
+      this.pendingConsumers = [];
     } catch (error) {
       this.logger.warn(
         `Failed to connect to RabbitMQ: ${(error as Error).message}. Retrying in 5s...`,
@@ -79,12 +88,19 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     handler: (data: QueueJobDataMap[Q]) => Promise<void>,
   ) {
     if (!this.channel) {
-      this.logger.warn('Channel not ready, consumer not registered');
+      this.pendingConsumers.push({ queue, handler });
       return;
     }
 
-    void this.channel.prefetch(1);
-    void this.channel.consume(queue, (msg) => {
+    this.registerConsumer(queue, handler);
+  }
+
+  private registerConsumer<Q extends QueueName>(
+    queue: Q,
+    handler: (data: QueueJobDataMap[Q]) => Promise<void>,
+  ) {
+    void this.channel!.prefetch(1);
+    void this.channel!.consume(queue, (msg) => {
       if (!msg) return;
 
       void (async () => {

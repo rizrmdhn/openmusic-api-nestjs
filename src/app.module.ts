@@ -11,6 +11,7 @@ import { CollaborationsModule } from './modules/collaborations/collaborations.mo
 import { CacheModule } from './cache/cache.module';
 import { RabbitMQModule } from './rabbitmq/rabbitmq.module';
 import { EmailModule } from './email/email.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { EmailModule } from './email/email.module';
     AuthModule,
     PlaylistModule,
     CollaborationsModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
