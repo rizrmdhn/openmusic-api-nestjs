@@ -1,8 +1,13 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DRIZZLE } from '../../database/drizzle.constants';
 import type { DB } from '../../database/database.types';
-import { eq } from 'drizzle-orm';
-import { albums } from './albums.schema';
+import { and, count, eq } from 'drizzle-orm';
+import { albums, userAlbumLikes } from './albums.schema';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { processAndUploadImageIfPresent, StorageService } from '../../storage';
@@ -36,10 +41,46 @@ export class AlbumsService {
     };
   }
 
+  async getLikesCount(albumId: string) {
+    const [{ count: number }] = await this.db
+      .select({ count: count() })
+      .from(userAlbumLikes)
+      .where(eq(userAlbumLikes.albumId, albumId));
+
+    return number;
+  }
+
   async create(dto: CreateAlbumDto) {
     const [todo] = await this.db.insert(albums).values(dto).returning();
 
     return todo;
+  }
+
+  async findLike(userId: string, albumId: string) {
+    const like = await this.db.query.userAlbumLikes.findFirst({
+      where: and(
+        eq(userAlbumLikes.userId, userId),
+        eq(userAlbumLikes.albumId, albumId),
+      ),
+    });
+
+    return like;
+  }
+
+  async like(userId: string, albumId: string) {
+    await this.findOne(albumId);
+
+    const alreadyLiked = await this.findLike(userId, albumId);
+
+    if (alreadyLiked)
+      throw new BadRequestException('Album already liked by this user');
+
+    const [like] = await this.db
+      .insert(userAlbumLikes)
+      .values({ userId, albumId })
+      .returning();
+
+    return like;
   }
 
   async update(id: string, dto: UpdateAlbumDto) {
@@ -83,5 +124,23 @@ export class AlbumsService {
       .returning();
 
     return album;
+  }
+
+  async deleteLike(userId: string, albumId: string) {
+    await this.findOne(albumId);
+
+    const like = await this.findLike(userId, albumId);
+
+    if (!like)
+      throw new NotFoundException(
+        'Like not found for this user and album combination',
+      );
+
+    const [deletedLike] = await this.db
+      .delete(userAlbumLikes)
+      .where(eq(userAlbumLikes.id, like.id))
+      .returning();
+
+    return deletedLike;
   }
 }
